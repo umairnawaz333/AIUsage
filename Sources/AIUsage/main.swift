@@ -38,6 +38,20 @@ if CommandLine.arguments.contains("--disconnect") {
     }
 }
 
+// `AIUsage --render-readme-images <dir>` draws the README images with sample numbers.
+if let flag = CommandLine.arguments.firstIndex(of: "--render-readme-images") {
+    let dir = CommandLine.arguments.count > flag + 1 ? CommandLine.arguments[flag + 1] : "docs"
+    MainActor.assumeIsolated {
+        do {
+            try ReadmeImages.render(to: URL(fileURLWithPath: dir))
+            exit(0)
+        } catch {
+            FileHandle.standardError.write(Data("AI Usage: \(error)\n".utf8))
+            exit(1)
+        }
+    }
+}
+
 MainActor.assumeIsolated {
     let app = NSApplication.shared
     let delegate = AppDelegate()

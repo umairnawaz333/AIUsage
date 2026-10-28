@@ -15,6 +15,15 @@ final class UsageStore: ObservableObject {
 
     private var timer: Timer?
 
+    init() {}
+
+    /// A fixed, connected store used to render the README images.
+    init(previewSnapshot: UsageSnapshot, now: Date) {
+        snapshot = previewSnapshot
+        isConnected = true
+        self.now = now
+    }
+
     func start() {
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in

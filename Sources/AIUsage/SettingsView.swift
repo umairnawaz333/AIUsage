@@ -90,7 +90,7 @@ struct SettingsView: View {
     }
 }
 
-private struct StyleCard: View {
+struct StyleCard: View {
     var style: WingStyle
     var snapshot: UsageSnapshot?
     var showIcon: Bool

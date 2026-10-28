@@ -33,8 +33,10 @@ struct IslandView: View {
     @ObservedObject var store: UsageStore
     @AppStorage(SettingsKey.wingStyle) private var styleRaw = WingStyle.concentric.rawValue
     @AppStorage(SettingsKey.showIcon) private var showIcon = true
+    /// Fixed style for rendered images, instead of the user's setting.
+    var styleOverride: WingStyle?
 
-    private var style: WingStyle { WingStyle(rawValue: styleRaw) ?? .concentric }
+    private var style: WingStyle { styleOverride ?? WingStyle(rawValue: styleRaw) ?? .concentric }
     private var geo: NotchGeometry { model.geometry }
 
     var body: some View {

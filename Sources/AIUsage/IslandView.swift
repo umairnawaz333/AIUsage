@@ -8,7 +8,7 @@ struct NotchGeometry: Equatable {
     var height: CGFloat
 
     /// The box that drops down under the island on hover. Its width matches the island, but never less than this.
-    static let detailSize = CGSize(width: 196, height: 38)
+    static let detailSize = CGSize(width: 214, height: 42)
 }
 
 @MainActor
@@ -90,8 +90,8 @@ struct DetailView: View {
     @ObservedObject var store: UsageStore
     var onOpenSettings: () -> Void
 
-    private let font = Font.system(size: 9.5, weight: .semibold).monospacedDigit()
-    private let small = Font.system(size: 9.5).monospacedDigit()
+    private let font = Font.system(size: 10.5, weight: .semibold).monospacedDigit()
+    private let small = Font.system(size: 10.5).monospacedDigit()
 
     var body: some View {
         let snap = store.current
@@ -129,7 +129,7 @@ struct DetailView: View {
 
     private func row(_ label: String, _ percent: Int?, reset: String?) -> some View {
         HStack(spacing: 5) {
-            Text(label).font(small).foregroundStyle(Palette.muted).frame(width: 13, alignment: .leading)
+            Text(label).font(small).foregroundStyle(Palette.muted).frame(width: 15, alignment: .leading)
             GeometryReader { geo in
                 HBar(percent: percent ?? 0, width: geo.size.width, height: 4)
                     .frame(maxHeight: .infinity)
@@ -138,12 +138,12 @@ struct DetailView: View {
             Text(percent.map { "\($0)%" } ?? "--")
                 .font(font)
                 .foregroundStyle(Palette.number(percent ?? 0))
-                .frame(width: 30, alignment: .trailing)
+                .frame(width: 33, alignment: .trailing)
             Text(reset ?? "")
                 .font(small)
                 .foregroundStyle(Palette.muted)
                 .lineLimit(1)
-                .frame(width: 46, alignment: .leading)
+                .frame(width: 52, alignment: .leading)
         }
     }
 }

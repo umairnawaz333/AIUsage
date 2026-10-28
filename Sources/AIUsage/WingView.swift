@@ -20,7 +20,7 @@ enum Palette {
 
 /// The small orange spark used for Claude.
 struct ClaudeMark: View {
-    var size: CGFloat = 7.7
+    var size: CGFloat = 8.5
 
     var body: some View {
         SparkShape()
@@ -123,8 +123,8 @@ struct WingView: View {
     private var s: Int { snapshot?.session.percent ?? 0 }
     private var w: Int { snapshot?.weekly.percent ?? 0 }
 
-    private let numberFont = Font.system(size: 9.5, weight: .semibold).monospacedDigit()
-    private let tinyFont = Font.system(size: 7.2, weight: .semibold).monospacedDigit()
+    private let numberFont = Font.system(size: 10.5, weight: .semibold).monospacedDigit()
+    private let tinyFont = Font.system(size: 7.9, weight: .semibold).monospacedDigit()
 
     var body: some View {
         HStack(spacing: 4) {
@@ -148,7 +148,7 @@ struct WingView: View {
         case .dotPair:
             HStack(spacing: 3) {
                 pct(s)
-                Text("·").font(.system(size: 7.7)).foregroundStyle(Palette.muted)
+                Text("·").font(.system(size: 8.5)).foregroundStyle(Palette.muted)
                 pct(w).opacity(0.85)
             }
         case .concentric:
@@ -192,7 +192,7 @@ struct WingView: View {
         case .alternating:
             TimelineView(.periodic(from: .now, by: 2.5)) { context in
                 let showWeekly = Int(context.date.timeIntervalSinceReferenceDate / 2.5) % 2 == 1
-                labeled(showWeekly ? "W" : "5h", showWeekly ? w : s, font: numberFont, labelSize: 7.7)
+                labeled(showWeekly ? "W" : "5h", showWeekly ? w : s, font: numberFont, labelSize: 8.5)
                     .animation(.easeInOut(duration: 0.25), value: showWeekly)
             }
         }

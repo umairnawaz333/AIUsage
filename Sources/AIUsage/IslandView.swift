@@ -94,11 +94,29 @@ struct DetailView: View {
     var body: some View {
         let snap = store.current
         HStack(spacing: 6) {
+            if !store.isConnected {
+                Button(action: onOpenSettings) {
+                    HStack(spacing: 5) {
+                        ClaudeMark(size: 9)
+                        Text("Connect Claude").font(font)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(.white.opacity(0.14)))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                Spacer()
+            } else if snap == nil {
+                Text("Waiting for Claude Code…").font(small).foregroundStyle(Palette.muted)
+                Spacer()
+            } else {
             VStack(spacing: 4) {
                 row("5h", snap?.session.percent,
                     reset: snap?.session.resetsAt.map { UsageFormat.countdown(to: $0, from: store.now) })
                 row("W", snap?.weekly.percent,
                     reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
+            }
             }
             SettingsButton(action: onOpenSettings)
         }

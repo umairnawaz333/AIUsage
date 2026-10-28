@@ -2,40 +2,73 @@ import Foundation
 import Testing
 @testable import AIUsage
 
-struct UsageSnapshotTests {
-    @Test func parsesFullLine() throws {
-        let snap = try #require(UsageSnapshot.parse("1793196805 26 1793202600 41 1793286000\n"))
-        #expect(snap.savedAt == Date(timeIntervalSince1970: 1793196805))
-        #expect(snap.session == .init(percent: 26, resetsAt: Date(timeIntervalSince1970: 1793202600)))
-        #expect(snap.weekly == .init(percent: 41, resetsAt: Date(timeIntervalSince1970: 1793286000)))
+struct ReadingTests {
+    private func payload(_ json: String) -> Data { Data(json.utf8) }
+
+    @Test func readsRateLimitsFromStatusLinePayload() throws {
+        let json = """
+        {"session_id":"abc","model":{"id":"x"},"rate_limits":{
+          "five_hour":{"used_percentage":26.6,"resets_at":1793202600},
+          "seven_day":{"used_percentage":41,"resets_at":"1793286000"}}}
+        """
+        let reading = try #require(Reading(statusLine: payload(json), savedAt: Date(timeIntervalSince1970: 5)))
+        #expect(reading.session == .init(percent: 27, resetsAt: Date(timeIntervalSince1970: 1793202600)))
+        #expect(reading.weekly == .init(percent: 41, resetsAt: Date(timeIntervalSince1970: 1793286000)))
     }
 
-    @Test func roundsAndClampsPercentages() throws {
-        let snap = try #require(UsageSnapshot.parse("1 26.6 0 140 0"))
-        #expect(snap.session.percent == 27)
-        #expect(snap.weekly.percent == 100)
-        #expect(snap.session.resetsAt == nil)
+    @Test func acceptsISODatesAndClamps() throws {
+        let json = #"{"rate_limits":{"five_hour":{"used_percentage":140,"resets_at":"2026-10-28T15:50:00Z"}}}"#
+        let reading = try #require(Reading(statusLine: payload(json), savedAt: .now))
+        #expect(reading.session?.percent == 100)
+        #expect(reading.session?.resetsAt == ISO8601DateFormatter().date(from: "2026-10-28T15:50:00Z"))
+        #expect(reading.weekly == nil)
     }
 
-    @Test func handlesMissingWeekly() throws {
-        let snap = try #require(UsageSnapshot.parse("1 12"))
-        #expect(snap.session.percent == 12)
-        #expect(snap.weekly == .init(percent: 0, resetsAt: nil))
+    @Test func rejectsPayloadsWithoutLimits() {
+        #expect(Reading(statusLine: payload(#"{"model":{"id":"x"}}"#), savedAt: .now) == nil)
+        #expect(Reading(statusLine: payload(#"{"rate_limits":{}}"#), savedAt: .now) == nil)
+        #expect(Reading(statusLine: payload("not json"), savedAt: .now) == nil)
+    }
+}
+
+struct MergeTests {
+    private func limit(_ percent: Int, _ reset: TimeInterval?) -> UsageSnapshot.Limit {
+        .init(percent: percent, resetsAt: reset.map { Date(timeIntervalSince1970: $0) })
     }
 
-    @Test func rejectsGarbage() {
-        #expect(UsageSnapshot.parse("") == nil)
-        #expect(UsageSnapshot.parse("hello world") == nil)
-        #expect(UsageSnapshot.parse("1793196805") == nil)
+    @Test func idleSessionsDoNotLowerTheNumbers() throws {
+        let busy = Reading(savedAt: Date(timeIntervalSince1970: 10), session: limit(30, 1000), weekly: limit(41, 5000))
+        let idle = Reading(savedAt: Date(timeIntervalSince1970: 20), session: limit(12, 1000), weekly: limit(40, 5000))
+        let snap = try #require(UsageSnapshot.merge([busy, idle]))
+        #expect(snap.session.percent == 30)
+        #expect(snap.weekly.percent == 41)
+        #expect(snap.savedAt == Date(timeIntervalSince1970: 20))
     }
 
-    @Test func passedResetDropsToZero() throws {
-        let snap = try #require(UsageSnapshot.parse("100 80 200 50 1000"))
+    @Test func newerWindowWinsEvenIfLower() throws {
+        let old = Reading(savedAt: .now, session: limit(95, 1000), weekly: nil)
+        let new = Reading(savedAt: .now, session: limit(3, 19000), weekly: nil)
+        let snap = try #require(UsageSnapshot.merge([old, new]))
+        #expect(snap.session == limit(3, 19000))
+    }
+
+    @Test func keepsWhicheverLimitIsAvailable() throws {
+        let onlyWeekly = Reading(savedAt: .now, session: nil, weekly: limit(41, 5000))
+        let snap = try #require(UsageSnapshot.merge([onlyWeekly]))
+        #expect(snap.weekly.percent == 41)
+        #expect(snap.session == limit(0, nil))
+        #expect(UsageSnapshot.merge([]) == nil)
+    }
+
+    @Test func passedResetDropsToZero() {
+        let snap = UsageSnapshot(savedAt: .now, session: limit(80, 200), weekly: limit(50, 1000))
         let current = snap.current(at: Date(timeIntervalSince1970: 300))
-        #expect(current.session == .init(percent: 0, resetsAt: nil))
+        #expect(current.session == limit(0, nil))
         #expect(current.weekly.percent == 50)
     }
+}
 
+struct FormatTests {
     @Test func countdownFormatting() {
         let now = Date(timeIntervalSince1970: 0)
         #expect(UsageFormat.countdown(to: now.addingTimeInterval(30), from: now) == "now")
@@ -43,5 +76,43 @@ struct UsageSnapshotTests {
         #expect(UsageFormat.countdown(to: now.addingTimeInterval(5795), from: now) == "1h 36m")
         #expect(UsageFormat.countdown(to: now.addingTimeInterval(89195), from: now) == "1d 0h")
         #expect(UsageFormat.age(of: now, from: now.addingTimeInterval(240)) == "4m ago")
+    }
+}
+
+struct JSONEditTests {
+    private func parse(_ text: String) -> [String: Any]? {
+        (try? JSONSerialization.jsonObject(with: Data(text.utf8))) as? [String: Any]
+    }
+
+    @Test func replacesValueAndKeepsEverythingElse() throws {
+        let text = """
+        {
+          "model": "opus",
+          "statusLine": {"type": "command", "command": "bash ~/a.sh", "refreshInterval": 10},
+          "hooks": {"x": [1, "}{"]}
+        }
+        """
+        let updated = JSONEdit.setTopLevel("statusLine", to: #"{"command":"new"}"#, in: text)
+        #expect(updated.contains(#""model": "opus","#))
+        #expect(updated.contains(#""hooks": {"x": [1, "}{"]}"#))
+        let root = try #require(parse(updated))
+        #expect((root["statusLine"] as? [String: Any])?["command"] as? String == "new")
+        #expect(JSONEdit.valueText(forTopLevelKey: "statusLine", in: text)
+                == #"{"type": "command", "command": "bash ~/a.sh", "refreshInterval": 10}"#)
+    }
+
+    @Test func addsKeyWhenMissing() throws {
+        let updated = JSONEdit.setTopLevel("statusLine", to: #"{"command":"new"}"#, in: #"{"model": "opus"}"#)
+        #expect(parse(updated)?["model"] as? String == "opus")
+        #expect(parse(updated)?["statusLine"] != nil)
+        #expect(parse(JSONEdit.setTopLevel("statusLine", to: "1", in: "{}"))?["statusLine"] as? Int == 1)
+    }
+
+    @Test func removesKeyAnywhere() throws {
+        for text in [#"{"statusLine": 1, "a": 2}"#, #"{"a": 2, "statusLine": 1}"#, #"{"a": 2, "statusLine": 1, "b": 3}"#, #"{"statusLine": 1}"#] {
+            let updated = JSONEdit.removeTopLevel("statusLine", in: text)
+            let root = try #require(parse(updated), "invalid JSON for \(text): \(updated)")
+            #expect(root["statusLine"] == nil)
+        }
     }
 }

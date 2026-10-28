@@ -39,6 +39,10 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            ClaudeConnectionSection(store: store)
+
+            Divider()
+
             Text("Notch style").font(.headline)
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(WingStyle.allCases) { style in
@@ -56,18 +60,6 @@ struct SettingsView: View {
             }
 
             Divider()
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Usage comes from ~/.claude/usage-now.txt, which your Claude Code status line updates while Claude Code is running.")
-                if let snap = store.snapshot {
-                    Text("Last updated \(UsageFormat.age(of: snap.savedAt, from: store.now)).")
-                } else {
-                    Text("No usage data found yet.")
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
 
             HStack {
                 Text(Self.versionString).font(.caption).foregroundStyle(.secondary)
@@ -135,5 +127,48 @@ private struct StyleCard: View {
         .overlay(RoundedRectangle(cornerRadius: 10)
             .stroke(selected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: selected ? 2 : 1))
         .contentShape(Rectangle())
+    }
+}
+
+/// Connect / Disconnect Claude Code, with what it does in plain words.
+private struct ClaudeConnectionSection: View {
+    @ObservedObject var store: UsageStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                ClaudeMark(size: 14)
+                Text("Claude").font(.headline)
+                Spacer()
+                if store.isConnected {
+                    Label("Connected", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.callout)
+                    Button("Disconnect") { store.disconnect() }
+                } else {
+                    Button("Connect") { store.connect() }
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+
+            Group {
+                if store.isConnected {
+                    if let snap = store.snapshot {
+                        Text("Last update \(UsageFormat.age(of: snap.savedAt, from: store.now)). Numbers refresh while Claude Code is running.")
+                    } else {
+                        Text("Waiting for numbers. Send a message in Claude Code and they'll appear.")
+                    }
+                } else {
+                    Text("AI Usage reads your limits from Claude Code on this Mac. No password, and nothing leaves your computer. Connecting adds a small bridge in front of your Claude Code status line; if you already have one, it keeps working exactly as before.")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+            if let error = store.connectionError {
+                Text(error).font(.caption).foregroundStyle(.red)
+            }
+        }
     }
 }

@@ -75,7 +75,9 @@ final class NotchController {
         let frame = screen.frame
 
         var geometry: NotchGeometry
-        if screen.safeAreaInsets.top > 0,
+        // `defaults write com.umairnawaz.AIUsage simulateNoNotch -bool YES` previews the no-notch pill.
+        let simulateNoNotch = UserDefaults.standard.bool(forKey: "simulateNoNotch")
+        if screen.safeAreaInsets.top > 0, !simulateNoNotch,
            let left = screen.auxiliaryTopLeftArea, let right = screen.auxiliaryTopRightArea {
             geometry = NotchGeometry(notchWidth: frame.width - left.width - right.width,
                                      height: screen.safeAreaInsets.top)

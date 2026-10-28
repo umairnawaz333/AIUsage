@@ -14,6 +14,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         notch.model.onQuit = { NSApp.terminate(nil) }
         notch.show()
+        // First run (or after Disconnect): show Settings so the user can connect Claude.
+        if !store.isConnected { settings.show() }
     }
 
     /// Opening the app again (e.g. from Finder) shows Settings, since there is no Dock icon.

@@ -8,15 +8,26 @@ A macOS app that shows your Claude usage next to the MacBook notch.
 
 On Macs without a notch, it shows as a small pill at the top centre of the screen.
 
-## Where the numbers come from
+## Connecting Claude
 
-The app reads `~/.claude/usage-now.txt`, which the Claude Code status line writes every 10 seconds while Claude Code is running:
+There's no login. On first launch, click **Connect** in Settings.
 
+Claude Code sends the usage limits (`rate_limits`) to whatever program is set as its status line. Connecting sets `statusLine.command` in `~/.claude/settings.json` to a small bridge script (`~/Library/Application Support/AIUsage/bridge.sh`). The bridge:
+
+1. saves each update for the app (one file per Claude Code session), then
+2. runs your original status line command, if you had one, with the same input, so your status line looks exactly as before.
+
+Your own status line script is never edited. A backup of `settings.json` is kept as `settings.json.aiusage-backup`, and **Disconnect** restores the original `statusLine` setting.
+
+The numbers refresh while Claude Code is running. If several sessions are open, the app shows the highest value for the current window, because idle sessions report older numbers. Once a reset time passes, that limit shows 0% until new numbers arrive.
+
+## Macs without a notch
+
+It shows as a small pill at the top centre of the screen. To preview that on a notched Mac:
+
+```sh
+defaults write com.umairnawaz.AIUsage simulateNoNotch -bool YES   # then relaunch; delete the key to undo
 ```
-<saved_epoch> <5h_pct> <5h_reset_epoch> <weekly_pct> <weekly_reset_epoch>
-```
-
-Once a reset time has passed, that limit shows 0% until fresh numbers arrive.
 
 ## Build and run
 

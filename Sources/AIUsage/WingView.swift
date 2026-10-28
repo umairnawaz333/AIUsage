@@ -127,8 +127,9 @@ struct WingView: View {
     private let tinyFont = Font.system(size: 7.2, weight: .semibold).monospacedDigit()
 
     var body: some View {
-        HStack(spacing: 4) {
-            if showIcon { ClaudeMark() }
+        // Two-line styles keep the icon level with the top line.
+        HStack(alignment: style == .stacked && snapshot != nil ? .top : .center, spacing: 4) {
+            if showIcon { ClaudeMark().padding(.top, style == .stacked ? 0.5 : 0) }
             if snapshot == nil {
                 Text("--").font(numberFont).foregroundStyle(Palette.muted)
             } else {

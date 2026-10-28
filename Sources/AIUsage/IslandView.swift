@@ -8,7 +8,7 @@ struct NotchGeometry: Equatable {
     var height: CGFloat
 
     /// The box that drops down under the island on hover. Its width matches the island, but never less than this.
-    static let detailSize = CGSize(width: 172, height: 38)
+    static let detailSize = CGSize(width: 186, height: 38)
 }
 
 @MainActor
@@ -48,7 +48,7 @@ struct IslandView: View {
             wing
 
             if model.expanded {
-                DetailView(store: store)
+                DetailView(store: store, onOpenSettings: model.onOpenSettings)
                     .frame(width: model.detailWidth, height: NotchGeometry.detailSize.height)
                     .background(
                         UnevenRoundedRectangle(bottomLeadingRadius: 14, bottomTrailingRadius: 14, style: .continuous)
@@ -84,19 +84,29 @@ struct IslandView: View {
 /// Two rows: 5-hour and weekly, each with a bar, the %, and when it resets.
 struct DetailView: View {
     @ObservedObject var store: UsageStore
+    var onOpenSettings: () -> Void
 
     private let font = Font.system(size: 9.5, weight: .semibold).monospacedDigit()
     private let small = Font.system(size: 9.5).monospacedDigit()
 
     var body: some View {
         let snap = store.current
-        VStack(spacing: 4) {
-            row("5h", snap?.session.percent,
-                reset: snap?.session.resetsAt.map { UsageFormat.countdown(to: $0, from: store.now) })
-            row("W", snap?.weekly.percent,
-                reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
+        HStack(spacing: 6) {
+            VStack(spacing: 4) {
+                row("5h", snap?.session.percent,
+                    reset: snap?.session.resetsAt.map { UsageFormat.countdown(to: $0, from: store.now) })
+                row("W", snap?.weekly.percent,
+                    reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
+            }
+            Button(action: onOpenSettings) {
+                Image(systemName: "gearshape.fill").font(.system(size: 8.5))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Palette.muted)
+            .help("Settings")
         }
-        .padding(.horizontal, 14)
+        .padding(.leading, 14)
+        .padding(.trailing, 10)
         .foregroundStyle(.white)
     }
 

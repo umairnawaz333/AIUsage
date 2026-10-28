@@ -99,11 +99,11 @@ final class NotchController {
         return CGRect(x: originX, y: screenTop - model.geometry.height, width: size.width, height: model.geometry.height)
     }
 
-    /// The strip plus the detail box hanging under its right end.
+    /// The strip plus the detail box hanging under it.
     private var expandedRect: CGRect {
         let detail = NotchGeometry.detailSize
         let box = CGRect(x: originX + model.detailOffsetX, y: screenTop - model.geometry.height - detail.height,
-                         width: detail.width, height: detail.height)
+                         width: model.detailWidth, height: detail.height)
         return collapsedRect.union(box)
     }
 

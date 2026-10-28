@@ -7,7 +7,7 @@ struct NotchGeometry: Equatable {
     /// Height of the menu bar / notch.
     var height: CGFloat
 
-    /// The small box that drops down under the wing on hover.
+    /// The box that drops down under the island on hover. Its width matches the island, but never less than this.
     static let detailSize = CGSize(width: 172, height: 38)
 }
 
@@ -21,8 +21,11 @@ final class IslandModel: ObservableObject {
     var onOpenSettings: () -> Void = {}
     var onQuit: () -> Void = {}
 
-    /// Left edge of the detail box, relative to the island's left edge: right-aligned with the wing.
-    var detailOffsetX: CGFloat { collapsedSize.width - NotchGeometry.detailSize.width }
+    /// Full island width, so the box sits under the whole notch and wing.
+    var detailWidth: CGFloat { max(collapsedSize.width, NotchGeometry.detailSize.width) }
+
+    /// Left edge of the detail box relative to the island; only negative when the island is narrower than the box.
+    var detailOffsetX: CGFloat { collapsedSize.width - detailWidth }
 }
 
 struct IslandView: View {
@@ -36,7 +39,7 @@ struct IslandView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            UnevenRoundedRectangle(bottomLeadingRadius: 10,
+            UnevenRoundedRectangle(bottomLeadingRadius: model.expanded ? 0 : 10,
                                    bottomTrailingRadius: model.expanded ? 0 : 10,
                                    style: .continuous)
                 .fill(.black)
@@ -46,9 +49,9 @@ struct IslandView: View {
 
             if model.expanded {
                 DetailView(store: store)
-                    .frame(width: NotchGeometry.detailSize.width, height: NotchGeometry.detailSize.height)
+                    .frame(width: model.detailWidth, height: NotchGeometry.detailSize.height)
                     .background(
-                        UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12, style: .continuous)
+                        UnevenRoundedRectangle(bottomLeadingRadius: 14, bottomTrailingRadius: 14, style: .continuous)
                             .fill(.black)
                             .shadow(color: .black.opacity(0.4), radius: 10, y: 6)
                     )
@@ -93,7 +96,7 @@ struct DetailView: View {
             row("W", snap?.weekly.percent,
                 reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 14)
         .foregroundStyle(.white)
     }
 

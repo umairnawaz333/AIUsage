@@ -7,22 +7,23 @@ cask "ai-usage" do
   desc "Shows Claude usage limits next to the MacBook notch"
   homepage "https://github.com/umairnawaz333/AIUsage"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "AI Usage.app"
 
-  postflight do
-    system_command "xattr",
-                   args: ["-rd", "com.apple.quarantine", "#{appdir}/AI Usage.app"],
-                   sudo: false
+  # The app is ad-hoc signed, so remove the download quarantine to let it open.
+  postflight_steps do
+    run "/usr/bin/xattr",
+        args:         ["-rd", "com.apple.quarantine", "{{appdir}}/AI Usage.app"],
+        must_succeed: false
   end
 
   uninstall quit: "com.umairnawaz.AIUsage"
 
   # Restore the user's original Claude Code status line before removing the bridge.
   zap script: {
-        executable: "#{appdir}/AI Usage.app/Contents/MacOS/AIUsage",
-        args:       ["--disconnect"],
+        executable:   "#{appdir}/AI Usage.app/Contents/MacOS/AIUsage",
+        args:         ["--disconnect"],
         must_succeed: false,
       },
       trash:  [

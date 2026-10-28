@@ -34,6 +34,25 @@
   .check { min-width: 0 !important; flex: none !important; white-space: nowrap; }
   button { font: inherit; font-size: 12px; color: var(--text); background: #2C2C2E; border: 0; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
 
+  .desk {
+    position: relative; height: 340px; border-radius: 14px; overflow: hidden; margin-bottom: 8px; border: 8px solid #1c1c1e;
+    background:
+      radial-gradient(900px 500px at 20% 120%, #ff7a59 0%, transparent 55%),
+      radial-gradient(700px 500px at 90% 0%, #5b5bd6 0%, transparent 60%),
+      linear-gradient(160deg, #1d2b64 0%, #6a3093 55%, #f8796b 100%);
+  }
+  .desk .bar { position: absolute; inset: 0 0 auto 0; height: 32px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; font-size: 13px; color: #fff; background: rgba(0,0,0,.18); }
+  .desk .bar b, .desk .bar span { margin-right: 18px; }
+  .desk .island { left: calc(50% - 95px); }
+  .desk .win { position: absolute; left: 6%; top: 70px; width: 44%; bottom: 30px; border-radius: 10px; background: rgba(30,30,32,.75);
+    padding: 34px 16px; font: 12px/1.6 ui-monospace, Menlo, monospace; color: #c7c7cc; }
+  .picker { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
+  .picker b { font-size: 12px; color: var(--muted); font-weight: 500; margin-right: 4px; }
+  .picker button { min-width: 32px; }
+  .picker button.on, .card.on { outline: 2px solid #0A84FF; }
+  .picker button.on { background: #0A84FF; outline: none; }
+  .card { cursor: pointer; }
   .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
   .card { background: var(--card); border-radius: 14px; overflow: hidden; }
   .stage {
@@ -77,6 +96,13 @@
       <button data-p="95,88">Near limit</button>
     </div>
   </div>
+
+  <div class="desk">
+    <div class="bar"><div><b>Terminal</b><span>Shell</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span></div><div>Wed 7:20 PM</div></div>
+    <div class="island" id="deskIsland"><div class="cam"></div><div class="row wingbox" id="deskWing"></div></div>
+    <div class="win">$ claude<br>✻ Welcome to Claude Code<br><br>&gt; refactor the auth module…</div>
+  </div>
+  <div class="picker" id="picker"><b>Real size on the desktop:</b></div>
 
   <div class="grid" id="grid"></div>
 </div>
@@ -169,11 +195,23 @@
     card.innerHTML = `<div class="stage"><div class="scaler"><div class="menubar"></div>
         <div class="island"><div class="cam"></div><div class="row wingbox"></div></div></div></div>
       <div class="meta"><div class="t"><span class="n">${String.fromCharCode(65 + i)}</span>${v.name}<span class="w"></span></div><p>${v.note}</p></div>`;
+    card.onclick = () => select(i);
     grid.appendChild(card);
+    const b = document.createElement('button');
+    b.textContent = String.fromCharCode(65 + i);
+    b.title = v.name;
+    b.onclick = () => select(i);
+    picker.appendChild(b);
     return { box: card.querySelector('.wingbox'), island: card.querySelector('.island'), w: card.querySelector('.w'), scaler: card.querySelector('.scaler') };
   });
 
-  let phase = 0;
+  let phase = 0, chosen = 2;
+  function select(i) {
+    chosen = i;
+    picker.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === i));
+    grid.querySelectorAll('.card').forEach((c, j) => c.classList.toggle('on', j === i));
+    render();
+  }
   function render() {
     const s = +sS.value, w = +sW.value;
     vS.textContent = s + '%'; vW.textContent = w + '%';
@@ -185,6 +223,10 @@
       // keep the island's right end (where the wing is) inside the card
       cells[i].scaler.style.left = `calc(100% - ${(95 + width) * 2.2 + 28}px)`;
       cells[i].w.textContent = '+' + width + 'px';
+      if (i === chosen) {
+        deskWing.innerHTML = cells[i].box.innerHTML;
+        deskIsland.style.width = 190 + width + 'px';
+      }
     });
   }
   sS.oninput = render; sW.oninput = render; showIcon.onchange = render;
@@ -193,7 +235,7 @@
     sS.value = s; sW.value = w; render();
   });
   setInterval(() => { phase ^= 1; render(); }, 2500);
-  render();
+  select(chosen);
 </script>
 </body>
 </html>

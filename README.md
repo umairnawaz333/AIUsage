@@ -1,11 +1,35 @@
 # AI Usage
 
-A macOS menu bar app that shows Claude usage in the MacBook notch.
+A macOS app that shows your Claude usage next to the MacBook notch.
 
-- **Collapsed:** a small wing on the right of the notch (5-hour % and a weekly ring).
-- **Expanded:** hover the notch to see usage bars and reset countdowns.
+- **Collapsed:** a small area on the right of the notch shows the 5-hour session % and the weekly %.
+- **Expanded:** hover over the notch to see both bars, when the session resets, and when the week resets.
+- **Settings:** choose from 9 styles for the collapsed view, show or hide the Claude icon, and turn on launch at login. To open Settings, click the gear in the expanded view, right-click the notch, or open the app again.
 
-## Status
+On Macs without a notch, it shows as a small pill at the top centre of the screen.
 
-Design preview: open `preview/index.html` in a browser.
+## Where the numbers come from
 
+The app reads `~/.claude/usage-now.txt`, which the Claude Code status line writes every 10 seconds while Claude Code is running:
+
+```
+<saved_epoch> <5h_pct> <5h_reset_epoch> <weekly_pct> <weekly_reset_epoch>
+```
+
+Once a reset time has passed, that limit shows 0% until fresh numbers arrive.
+
+## Build and run
+
+Requires macOS 14+ and Xcode command line tools.
+
+```sh
+scripts/build-app.sh          # builds "build/AI Usage.app"
+open "build/AI Usage.app"
+swift test                    # unit tests
+```
+
+The version shown in Settings comes from the `VERSION` file. The build number is the git commit count.
+
+## Design previews
+
+`preview/index.html` and `preview/variants.html` are the HTML mockups used to choose the design.

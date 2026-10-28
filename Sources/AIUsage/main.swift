@@ -25,6 +25,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+// `AIUsage --disconnect` restores the user's original status line without opening the app.
+// Homebrew's `uninstall --zap` runs it before deleting the bridge files.
+if CommandLine.arguments.contains("--disconnect") {
+    do {
+        try ClaudeBridge.disconnect()
+        print("AI Usage disconnected from Claude Code.")
+        exit(0)
+    } catch {
+        FileHandle.standardError.write(Data("AI Usage: \(error.localizedDescription)\n".utf8))
+        exit(1)
+    }
+}
+
 MainActor.assumeIsolated {
     let app = NSApplication.shared
     let delegate = AppDelegate()

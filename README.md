@@ -8,6 +8,19 @@ A macOS app that shows your Claude usage next to the MacBook notch.
 
 On Macs without a notch, it shows as a small pill at the top centre of the screen.
 
+## Install
+
+```sh
+brew tap umairnawaz333/tap
+brew install --cask ai-usage
+```
+
+To remove it completely and restore your original Claude Code status line:
+
+```sh
+brew uninstall --zap --cask ai-usage
+```
+
 ## Connecting Claude
 
 There's no login. On first launch, click **Connect** in Settings.
@@ -37,6 +50,7 @@ Requires macOS 14+ and Xcode command line tools.
 scripts/build-app.sh          # builds "build/AI Usage.app"
 open "build/AI Usage.app"
 scripts/make-dmg.sh           # builds "build/AI-Usage-<version>.dmg" for sharing
+scripts/release.sh            # builds build/AI-Usage.zip and the Homebrew cask build/ai-usage.rb
 swift test                    # unit tests
 swift scripts/make-icon.swift # redraws Resources/AppIcon.icns
 ```

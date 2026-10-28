@@ -8,7 +8,7 @@ struct NotchGeometry: Equatable {
     var height: CGFloat
 
     /// The box that drops down under the island on hover. Its width matches the island, but never less than this.
-    static let detailSize = CGSize(width: 186, height: 38)
+    static let detailSize = CGSize(width: 196, height: 38)
 }
 
 @MainActor
@@ -55,7 +55,9 @@ struct IslandView: View {
                             .fill(.black)
                             .shadow(color: .black.opacity(0.4), radius: 10, y: 6)
                     )
-                    .offset(x: model.detailOffsetX, y: geo.height)
+                    // Padding (not offset) for the vertical move so layout and hit-testing match what is drawn.
+                    .padding(.top, geo.height)
+                    .offset(x: model.detailOffsetX)
                     .transition(.opacity.combined(with: .offset(y: -8)))
             }
         }
@@ -98,15 +100,10 @@ struct DetailView: View {
                 row("W", snap?.weekly.percent,
                     reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
             }
-            Button(action: onOpenSettings) {
-                Image(systemName: "gearshape.fill").font(.system(size: 8.5))
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Palette.muted)
-            .help("Settings")
+            SettingsButton(action: onOpenSettings)
         }
         .padding(.leading, 14)
-        .padding(.trailing, 10)
+        .padding(.trailing, 6)
         .foregroundStyle(.white)
     }
 
@@ -128,5 +125,25 @@ struct DetailView: View {
                 .lineLimit(1)
                 .frame(width: 46, alignment: .leading)
         }
+    }
+}
+
+/// Gear with a generous click target that lights up on hover.
+private struct SettingsButton: View {
+    var action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(hovering ? .white : Palette.muted)
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(.white.opacity(hovering ? 0.15 : 0)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help("Settings")
     }
 }

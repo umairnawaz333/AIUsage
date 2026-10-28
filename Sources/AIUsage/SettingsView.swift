@@ -21,8 +21,10 @@ final class SettingsWindowController {
             window.center()
             self.window = window
         }
-        NSApp.activate()
+        // The app has no Dock icon and is rarely active, so force Settings in front of other apps' windows.
+        NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
     }
 }
 

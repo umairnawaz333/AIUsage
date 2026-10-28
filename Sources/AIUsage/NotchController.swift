@@ -30,8 +30,8 @@ final class NotchController {
             IslandView(model: model, store: store).padding(.leading, Self.leftRoom))
         // The panel's frame is set by layout(); don't let the SwiftUI content resize it.
         host.sizingOptions = []
-        let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
-                            backing: .buffered, defer: false)
+        let panel = KeyablePanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
+                                 backing: .buffered, defer: false)
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
@@ -135,6 +135,11 @@ final class NotchController {
         model.expanded = false
         panel?.ignoresMouseEvents = true
     }
+}
+
+/// Borderless panels refuse key status by default, which can swallow clicks on SwiftUI buttons.
+private final class KeyablePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
 }
 
 /// Lets buttons in the non-activating panel respond to the first click.

@@ -73,8 +73,8 @@
   .meta p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
 
   /* shared bits used inside wings */
-  .num { font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .tiny { font-size: 7.5px; font-weight: 600; line-height: 8.5px; font-variant-numeric: tabular-nums; }
+  .num { font-size: 8.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tiny { font-size: 6.5px; font-weight: 600; line-height: 7.5px; font-variant-numeric: tabular-nums; }
   .lbl { color: var(--muted); font-weight: 500; }
   .row { display: flex; align-items: center; gap: 3px; }
   .fade { animation: fade 4s infinite; }
@@ -108,7 +108,7 @@
 </div>
 
 <script>
-  const CLAUDE = `<svg width="8" height="8" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3.2" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>`;
+  const CLAUDE = `<svg width="7" height="7" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3.2" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>`;
   const col = p => p >= 90 ? 'var(--bad)' : p >= 70 ? 'var(--warn)' : 'var(--ok)';
   const numCol = p => p >= 70 ? col(p) : 'var(--text)';
 
@@ -120,7 +120,7 @@
   };
   const hbar = (p, w, h = 3) => `<span style="display:block;width:${w}px;height:${h}px;border-radius:9px;background:var(--track);overflow:hidden">
       <span style="display:block;height:100%;width:${p}%;background:${col(p)};border-radius:9px"></span></span>`;
-  const vbar = (p, h = 13, w = 3) => `<span style="display:flex;align-items:flex-end;width:${w}px;height:${h}px;border-radius:2px;background:var(--track);overflow:hidden">
+  const vbar = (p, h = 11, w = 3) => `<span style="display:flex;align-items:flex-end;width:${w}px;height:${h}px;border-radius:2px;background:var(--track);overflow:hidden">
       <span style="display:block;width:100%;height:${p}%;background:${col(p)}"></span></span>`;
 
   const variants = [
@@ -135,33 +135,33 @@
       name: 'Two numbers with a dot',
       note: 'Session % · weekly % on one line. Colour of each number shows how close it is to the limit.',
       html: (s, w) => `<div class="row"><span class="num" style="color:${numCol(s)}">${s}%</span>
-          <span class="lbl" style="font-size:8px">·</span><span class="num" style="color:${numCol(w)};opacity:.85">${w}%</span></div>`
+          <span class="lbl" style="font-size:7px">·</span><span class="num" style="color:${numCol(w)};opacity:.85">${w}%</span></div>`
     },
     {
       name: 'Concentric rings',
       note: 'Outer ring = session, inner ring = weekly. Session number next to it.',
       html: (s, w) => `<div class="row"><span class="num" style="color:${numCol(s)}">${s}%</span>
-          <svg width="14" height="14" viewBox="0 0 20 20">${arc(10, 10, 8, 2.4, s, col(s))}${arc(10, 10, 4.2, 2.4, w, col(w))}</svg></div>`
+          <svg width="12" height="12" viewBox="0 0 20 20">${arc(10, 10, 8, 2.4, s, col(s))}${arc(10, 10, 4.2, 2.4, w, col(w))}</svg></div>`
     },
     {
       name: 'Twin rings',
       note: 'Two small rings, session then weekly. Smallest and cleanest; exact numbers on hover.',
       html: (s, w) => `<div class="row">
-          <svg width="12" height="12" viewBox="0 0 20 20">${arc(10, 10, 7, 3, s, col(s))}</svg>
-          <svg width="12" height="12" viewBox="0 0 20 20">${arc(10, 10, 7, 3, w, col(w))}</svg></div>`
+          <svg width="10" height="10" viewBox="0 0 20 20">${arc(10, 10, 7, 3, s, col(s))}</svg>
+          <svg width="10" height="10" viewBox="0 0 20 20">${arc(10, 10, 7, 3, w, col(w))}</svg></div>`
     },
     {
       name: 'Twin rings with numbers',
       note: 'Like twin rings, but each ring has its % beside it.',
       html: (s, w) => `<div class="row" style="gap:2px">
-          <svg width="10" height="10" viewBox="0 0 20 20">${arc(10, 10, 7, 3.4, s, col(s))}</svg><span class="tiny" style="font-size:10px;color:${numCol(s)}">${s}%</span>
+          <svg width="9" height="9" viewBox="0 0 20 20">${arc(10, 10, 7, 3.4, s, col(s))}</svg><span class="tiny" style="font-size:8.5px;color:${numCol(s)}">${s}%</span>
           <span style="width:3px"></span>
-          <svg width="10" height="10" viewBox="0 0 20 20">${arc(10, 10, 7, 3.4, w, col(w))}</svg><span class="tiny" style="font-size:10px;color:${numCol(w)}">${w}%</span></div>`
+          <svg width="9" height="9" viewBox="0 0 20 20">${arc(10, 10, 7, 3.4, w, col(w))}</svg><span class="tiny" style="font-size:8.5px;color:${numCol(w)}">${w}%</span></div>`
     },
     {
       name: 'Two thin bars',
       note: 'Two stacked bars (session on top) with the session % beside them.',
-      html: (s, w) => `<div class="row" style="gap:4px"><div style="display:flex;flex-direction:column;gap:2px">${hbar(s, 20, 2.5)}${hbar(w, 20, 2.5)}</div>
+      html: (s, w) => `<div class="row" style="gap:4px"><div style="display:flex;flex-direction:column;gap:2px">${hbar(s, 18, 2)}${hbar(w, 18, 2)}</div>
           <span class="num" style="color:${numCol(s)}">${s}%</span></div>`
     },
     {
@@ -172,7 +172,7 @@
     {
       name: 'Split battery',
       note: 'One battery shape; top half fills with session, bottom half with weekly.',
-      html: (s, w) => `<div class="row"><span style="display:flex;flex-direction:column;gap:1.5px;padding:1.5px;width:20px;height:11px;border:1.2px solid #636366;border-radius:3px">
+      html: (s, w) => `<div class="row"><span style="display:flex;flex-direction:column;gap:1.5px;padding:1.5px;width:18px;height:10px;border:1.2px solid #636366;border-radius:3px">
           <span style="flex:1;border-radius:1.5px;background:linear-gradient(90deg,${col(s)} ${s}%,transparent ${s}%)"></span>
           <span style="flex:1;border-radius:1.5px;background:linear-gradient(90deg,${col(w)} ${w}%,transparent ${w}%)"></span></span>
           <span style="width:1.5px;height:4px;border-radius:0 1px 1px 0;background:#636366;margin-left:-2px"></span></div>`
@@ -183,7 +183,7 @@
       alt: true,
       html: (s, w, phase) => {
         const [l, p] = phase ? ['W', w] : ['5h', s];
-        return `<div class="row"><span class="tiny lbl" style="font-size:8px">${l}</span><span class="num" style="color:${numCol(p)}">${p}%</span></div>`;
+        return `<div class="row"><span class="tiny lbl" style="font-size:7px">${l}</span><span class="num" style="color:${numCol(p)}">${p}%</span></div>`;
       }
     },
   ];

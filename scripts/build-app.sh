@@ -15,6 +15,7 @@ swift build -c release -j 2
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$(swift build -c release --show-bin-path)/AIUsage" "$APP/Contents/MacOS/AIUsage"
+cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 sed -e "s/__VERSION__/$VERSION/" -e "s/__BUILD__/$BUILD/" Resources/Info.plist > "$APP/Contents/Info.plist"
 
 codesign --force --sign - "$APP"

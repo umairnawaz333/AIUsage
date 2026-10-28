@@ -36,8 +36,12 @@ Requires macOS 14+ and Xcode command line tools.
 ```sh
 scripts/build-app.sh          # builds "build/AI Usage.app"
 open "build/AI Usage.app"
+scripts/make-dmg.sh           # builds "build/AI-Usage-<version>.dmg" for sharing
 swift test                    # unit tests
+swift scripts/make-icon.swift # redraws Resources/AppIcon.icns
 ```
+
+The app is ad-hoc signed for now. To share it without macOS security warnings, it needs a Developer ID Application certificate (paid Apple Developer Program) plus notarization.
 
 The version shown in Settings comes from the `VERSION` file. The build number is the git commit count.
 

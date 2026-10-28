@@ -15,7 +15,7 @@
     --track: #2C2C2E;
     --page: #111214;
     --notch: 190px;   /* physical camera notch width */
-    --wing: 64px;     /* extra width added on the right */
+    --wing: 48px;     /* extra width added on the right */
   }
   * { box-sizing: border-box; }
   body {
@@ -49,27 +49,27 @@
     background: #000; border-radius: 0 0 10px 10px; overflow: hidden; cursor: pointer; z-index: 5;
     transition: width .32s cubic-bezier(.3,1.3,.5,1), height .32s cubic-bezier(.3,1.3,.5,1), border-radius .25s;
   }
-  .island.open { width: calc(var(--notch) + 90px); height: 92px; border-radius: 0 0 18px 18px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+  .island.open { width: calc(var(--notch) + 60px); height: 84px; border-radius: 0 0 16px 16px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
 
   /* camera dot just to show where the physical notch is */
   .cam { position: absolute; top: 12px; left: calc(var(--notch) / 2 + 22px); width: 7px; height: 7px; border-radius: 50%; background: #0c0c14; box-shadow: inset 0 0 2px #223; }
 
   .wing {
-    position: absolute; top: 0; right: 10px; height: 32px; display: flex; align-items: center; gap: 5px;
-    font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; transition: opacity .15s;
+    position: absolute; top: 0; right: 7px; height: 32px; display: flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; transition: opacity .15s;
   }
   .island.open .wing { opacity: 0; }
-  .ring { width: 14px; height: 14px; }
+  .ring { width: 11px; height: 11px; }
 
-  .content { position: absolute; inset: 38px 14px 12px; opacity: 0; transition: opacity .15s; }
+  .content { position: absolute; inset: 34px 12px 10px; opacity: 0; transition: opacity .15s; }
   .island.open .content { opacity: 1; transition: opacity .2s .12s; }
 
-  .prov { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .prov { display: flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 600; margin-bottom: 3px; }
   .prov .dim { margin-left: auto; color: var(--muted); font-weight: 400; }
-  .row { display: grid; grid-template-columns: 14px 1fr 32px; align-items: center; gap: 7px; margin: 3px 0; font-size: 11px; }
+  .row { display: grid; grid-template-columns: 12px 1fr 26px; align-items: center; gap: 5px; margin: 2px 0; font-size: 9.5px; }
   .row .k { color: var(--muted); }
   .row .p { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .bar { height: 5px; border-radius: 99px; background: var(--track); overflow: hidden; }
+  .bar { height: 4px; border-radius: 99px; background: var(--track); overflow: hidden; }
   .bar > i { display: block; height: 100%; border-radius: 99px; transition: width .4s, background .3s; }
 
   .window {
@@ -108,13 +108,13 @@
     <div class="island">
       <div class="cam"></div>
       <div class="wing" title="Claude: 5-hour session">
-        <svg width="11" height="11" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>
+        <svg width="8" height="8" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>
         <span data-k="wingPct">26%</span>
         <svg class="ring" viewBox="0 0 20 20" data-k="ring"></svg>
       </div>
       <div class="content">
         <div class="prov">
-          <svg width="11" height="11" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>
+          <svg width="8" height="8" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>
           Claude <span class="dim" data-k="reset">resets 1h 36m</span>
         </div>
         <div class="row"><span class="k">5h</span><div class="bar"><i data-k="barS"></i></div><span class="p" data-k="pctS">26%</span></div>

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Usage Variants</title>
+<style>
+  :root {
+    --claude: #D97757;
+    --ok: #34C759;
+    --warn: #FF9F0A;
+    --bad: #FF453A;
+    --text: #F5F5F7;
+    --muted: #8E8E93;
+    --track: #3A3A3C;
+    --page: #111214;
+    --card: #1C1C1E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--text);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 24px; background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 20px; }
+  .controls label { display: flex; align-items: center; gap: 10px; font-size: 13px; min-width: 240px; flex: 1; }
+  .controls input { flex: 1; }
+  .controls .presets { display: flex; gap: 8px; align-items: center; }
+  .controls .presets b { font-size: 12px; color: var(--muted); font-weight: 500; margin-right: 2px; }
+  button.on { background: #0A84FF; }
+  .check { min-width: 0 !important; flex: 0 !important; white-space: nowrap; }
+  button { font: inherit; font-size: 12px; color: var(--text); background: #2C2C2E; border: 0; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .card { background: var(--card); border-radius: 14px; overflow: hidden; }
+  .stage {
+    height: 120px; position: relative; overflow: hidden;
+    background: linear-gradient(160deg, #1d2b64 0%, #6a3093 60%, #f8796b 140%);
+  }
+  .scaler { position: absolute; top: 0; left: 50%; width: 0; transform: scale(2.2); transform-origin: top center; }
+  .menubar { position: absolute; top: 0; left: -200px; width: 400px; height: 32px; background: rgba(0,0,0,.18); }
+  .island {
+    position: absolute; top: 0; left: -95px; height: 32px; background: #000;
+    border-radius: 0 0 10px 10px; display: flex; align-items: center; justify-content: flex-end; padding-right: 9px;
+  }
+  .cam { position: absolute; top: 12px; left: 117px; width: 7px; height: 7px; border-radius: 50%; background: #0c0c14; }
+  .meta { padding: 12px 14px 14px; }
+  .meta .t { display: flex; align-items: baseline; gap: 8px; font-weight: 600; }
+  .meta .t .n { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .meta .t .w { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .meta p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+
+  /* shared bits used inside wings */
+  .num { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tiny { font-size: 8.5px; font-weight: 600; line-height: 10px; font-variant-numeric: tabular-nums; }
+  .lbl { color: var(--muted); font-weight: 500; }
+  .row { display: flex; align-items: center; gap: 4px; }
+  .fade { animation: fade 4s infinite; }
+  @keyframes fade { 0%, 100% { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Compact wing ideas</h1>
+  <p class="sub">Each one shows the 5‑hour session and weekly usage on the right of the notch. If both Claude and Codex are connected, you choose which one the notch shows; switch below to compare. Close‑ups are at 2.2× zoom; real width is shown on the right of each title.</p>
+
+  <div class="controls">
+    <label>5‑hour <input type="range" id="sS" min="0" max="100" value="26"><span id="vS">26%</span></label>
+    <label>Weekly <input type="range" id="sW" min="0" max="100" value="41"><span id="vW">41%</span></label>
+    <div class="presets">
+      <b>Showing</b>
+      <button data-ai="claude" class="on">Claude</button>
+      <button data-ai="codex">Codex</button>
+    </div>
+    <label class="check"><input type="checkbox" id="showIcon" checked> AI icon</label>
+    <div class="presets">
+      <button data-p="26,41">Now</button>
+      <button data-p="74,52">Busy</button>
+      <button data-p="95,88">Near limit</button>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+  const ICONS = {
+    claude: `<svg width="10" height="10" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3.2" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>`,
+    codex: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10A37F" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7 5 5-5 5M12 18h7"/></svg>`,
+  };
+  const usage = { claude: [26, 41], codex: [58, 22] };
+  let ai = 'claude';
+  const col = p => p >= 90 ? 'var(--bad)' : p >= 70 ? 'var(--warn)' : 'var(--ok)';
+  const numCol = p => p >= 70 ? col(p) : 'var(--text)';
+
+  const arc = (cx, cy, r, sw, p, color) => {
+    const c = 2 * Math.PI * r;
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round"
+       stroke-dasharray="${c * p / 100} ${c}" transform="rotate(-90 ${cx} ${cy})"/>`;
+  };
+  const hbar = (p, w, h = 3) => `<span style="display:block;width:${w}px;height:${h}px;border-radius:9px;background:var(--track);overflow:hidden">
+      <span style="display:block;height:100%;width:${p}%;background:${col(p)};border-radius:9px"></span></span>`;
+  const vbar = (p, h = 16, w = 4) => `<span style="display:flex;align-items:flex-end;width:${w}px;height:${h}px;border-radius:2px;background:var(--track);overflow:hidden">
+      <span style="display:block;width:100%;height:${p}%;background:${col(p)}"></span></span>`;
+
+  const variants = [
+    {
+      name: 'Stacked numbers', width: 50,
+      note: 'Two tiny lines: 5h on top, W below. Exact numbers, no graphics.',
+      html: (s, w) => `<div style="display:flex;flex-direction:column;align-items:flex-end">
+          <span class="tiny"><span class="lbl">5h</span> <span style="color:${numCol(s)}">${s}%</span></span>
+          <span class="tiny"><span class="lbl">W</span> <span style="color:${numCol(w)}">${w}%</span></span></div>`
+    },
+    {
+      name: 'Two numbers with a dot', width: 46,
+      note: 'Session · weekly on one line. Colour of each number shows how close it is to the limit.',
+      html: (s, w) => `<div class="row"><span class="num" style="color:${numCol(s)}">${s}</span>
+          <span class="lbl" style="font-size:10px">·</span><span class="num" style="color:${numCol(w)};opacity:.85">${w}</span></div>`
+    },
+    {
+      name: 'Concentric rings', width: 52,
+      note: 'Outer ring = session, inner ring = weekly. Session number next to it.',
+      html: (s, w) => `<div class="row"><span class="num" style="color:${numCol(s)}">${s}%</span>
+          <svg width="18" height="18" viewBox="0 0 20 20">${arc(10, 10, 8, 2.4, s, col(s))}${arc(10, 10, 4.2, 2.4, w, col(w))}</svg></div>`
+    },
+    {
+      name: 'Twin rings', width: 44,
+      note: 'Two small rings, session then weekly. Smallest and cleanest; exact numbers on hover.',
+      html: (s, w) => `<div class="row">
+          <svg width="15" height="15" viewBox="0 0 20 20">${arc(10, 10, 7, 3, s, col(s))}</svg>
+          <svg width="15" height="15" viewBox="0 0 20 20">${arc(10, 10, 7, 3, w, col(w))}</svg></div>`
+    },
+    {
+      name: 'Twin rings with numbers', width: 76,
+      note: 'Like twin rings, but each ring has its % beside it.',
+      html: (s, w) => `<div class="row" style="gap:3px">
+          <svg width="12" height="12" viewBox="0 0 20 20">${arc(10, 10, 7, 3.4, s, col(s))}</svg><span class="tiny" style="font-size:10px;color:${numCol(s)}">${s}</span>
+          <span style="width:4px"></span>
+          <svg width="12" height="12" viewBox="0 0 20 20">${arc(10, 10, 7, 3.4, w, col(w))}</svg><span class="tiny" style="font-size:10px;color:${numCol(w)}">${w}</span></div>`
+    },
+    {
+      name: 'Two thin bars', width: 66,
+      note: 'Two stacked bars (session on top) with the session % beside them.',
+      html: (s, w) => `<div class="row" style="gap:6px"><div style="display:flex;flex-direction:column;gap:3px">${hbar(s, 28)}${hbar(w, 28)}</div>
+          <span class="num" style="color:${numCol(s)}">${s}%</span></div>`
+    },
+    {
+      name: 'Signal columns', width: 46,
+      note: 'Two vertical bars like a signal meter, plus the session number.',
+      html: (s, w) => `<div class="row" style="gap:3px"><span class="num" style="margin-right:3px;color:${numCol(s)}">${s}</span>${vbar(s)}${vbar(w)}</div>`
+    },
+    {
+      name: 'Split battery', width: 40,
+      note: 'One battery shape; top half fills with session, bottom half with weekly.',
+      html: (s, w) => `<div class="row"><span style="display:flex;flex-direction:column;gap:1.5px;padding:2px;width:28px;height:14px;border:1.3px solid #636366;border-radius:4px">
+          <span style="flex:1;border-radius:1.5px;background:linear-gradient(90deg,${col(s)} ${s}%,transparent ${s}%)"></span>
+          <span style="flex:1;border-radius:1.5px;background:linear-gradient(90deg,${col(w)} ${w}%,transparent ${w}%)"></span></span>
+          <span style="width:2px;height:5px;border-radius:0 1px 1px 0;background:#636366;margin-left:-3px"></span></div>`
+    },
+    {
+      name: 'Alternating', width: 54,
+      note: 'Shows "5h 26%", then fades to "W 41%" every few seconds. Readable, but only one at a time.',
+      alt: true,
+      html: (s, w, phase) => {
+        const [l, p] = phase ? ['W', w] : ['5h', s];
+        return `<div class="row"><span class="tiny lbl" style="font-size:10px">${l}</span><span class="num" style="color:${numCol(p)}">${p}%</span></div>`;
+      }
+    },
+  ];
+
+  const grid = document.getElementById('grid');
+  const cells = variants.map((v, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<div class="stage"><div class="scaler"><div class="menubar"></div>
+        <div class="island"><div class="cam"></div><div class="row wingbox"></div></div></div></div>
+      <div class="meta"><div class="t"><span class="n">${String.fromCharCode(65 + i)}</span>${v.name}<span class="w"></span></div><p>${v.note}</p></div>`;
+    grid.appendChild(card);
+    return { box: card.querySelector('.wingbox'), island: card.querySelector('.island'), w: card.querySelector('.w') };
+  });
+
+  let phase = 0;
+  function render() {
+    const s = +sS.value, w = +sW.value;
+    vS.textContent = s + '%'; vW.textContent = w + '%';
+    usage[ai] = [s, w];
+    const icon = showIcon.checked;
+    variants.forEach((v, i) => {
+      const width = v.width + (icon ? 15 : 0);
+      cells[i].box.innerHTML = (icon ? `<span style="display:flex;margin-right:5px">${ICONS[ai]}</span>` : '') + v.html(s, w, phase);
+      cells[i].island.style.width = 190 + width + 'px';
+      cells[i].w.textContent = '+' + width + 'px';
+    });
+  }
+  sS.oninput = render; sW.oninput = render; showIcon.onchange = render;
+  document.querySelectorAll('[data-ai]').forEach(b => b.onclick = () => {
+    ai = b.dataset.ai;
+    document.querySelectorAll('[data-ai]').forEach(x => x.classList.toggle('on', x === b));
+    [sS.value, sW.value] = usage[ai];
+    render();
+  });
+  document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
+    const [s, w] = b.dataset.p.split(',');
+    sS.value = s; sW.value = w; render();
+  });
+  setInterval(() => { phase ^= 1; render(); }, 2500);
+  render();
+</script>
+</body>
+</html>

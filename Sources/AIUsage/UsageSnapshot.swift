@@ -57,10 +57,10 @@ enum UsageFormat {
         return "\(minutes)m"
     }
 
-    /// "Thu 8:00 PM" in the user's locale.
-    static func weekdayTime(_ date: Date) -> String {
+    /// "Thu 8 PM" in the user's locale.
+    static func weekdayHour(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.setLocalizedDateFormatFromTemplate("EEEjmm")
+        formatter.setLocalizedDateFormatFromTemplate("EEEj")
         return formatter.string(from: date)
     }
 

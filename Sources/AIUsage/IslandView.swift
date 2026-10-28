@@ -7,14 +7,8 @@ struct NotchGeometry: Equatable {
     /// Height of the menu bar / notch.
     var height: CGFloat
 
-    static let expandedExtra: CGFloat = 70
-    static let expandedMinWidth: CGFloat = 230
-    static let expandedHeight: CGFloat = 50
-
-    var expandedSize: CGSize {
-        CGSize(width: max(notchWidth + Self.expandedExtra, Self.expandedMinWidth),
-               height: height + Self.expandedHeight)
-    }
+    /// The small box that drops down under the wing on hover.
+    static let detailSize = CGSize(width: 172, height: 38)
 }
 
 @MainActor
@@ -26,6 +20,9 @@ final class IslandModel: ObservableObject {
 
     var onOpenSettings: () -> Void = {}
     var onQuit: () -> Void = {}
+
+    /// Left edge of the detail box, relative to the island's left edge: right-aligned with the wing.
+    var detailOffsetX: CGFloat { collapsedSize.width - NotchGeometry.detailSize.width }
 }
 
 struct IslandView: View {
@@ -39,26 +36,27 @@ struct IslandView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            UnevenRoundedRectangle(bottomLeadingRadius: model.expanded ? 16 : 10,
-                                   bottomTrailingRadius: model.expanded ? 16 : 10,
+            UnevenRoundedRectangle(bottomLeadingRadius: 10,
+                                   bottomTrailingRadius: model.expanded ? 0 : 10,
                                    style: .continuous)
                 .fill(.black)
-                .frame(width: model.expanded ? geo.expandedSize.width : model.collapsedSize.width,
-                       height: model.expanded ? geo.expandedSize.height : geo.height)
-                .shadow(color: .black.opacity(model.expanded ? 0.45 : 0), radius: 14, y: 8)
+                .frame(width: model.collapsedSize.width, height: geo.height)
 
             wing
-                .opacity(model.expanded ? 0 : 1)
 
             if model.expanded {
-                ExpandedView(store: store, onOpenSettings: model.onOpenSettings, onQuit: model.onQuit)
-                    .frame(width: geo.expandedSize.width - 24)
-                    .padding(.top, geo.height + 2)
-                    .padding(.horizontal, 12)
-                    .transition(.opacity.animation(.easeOut(duration: 0.18).delay(0.08)))
+                DetailView(store: store)
+                    .frame(width: NotchGeometry.detailSize.width, height: NotchGeometry.detailSize.height)
+                    .background(
+                        UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12, style: .continuous)
+                            .fill(.black)
+                            .shadow(color: .black.opacity(0.4), radius: 10, y: 6)
+                    )
+                    .offset(x: model.detailOffsetX, y: geo.height)
+                    .transition(.opacity.combined(with: .offset(y: -8)))
             }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.78), value: model.expanded)
+        .animation(.spring(response: 0.28, dampingFraction: 0.85), value: model.expanded)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .contextMenu {
             Button("Settings…", action: model.onOpenSettings)
@@ -80,64 +78,42 @@ struct IslandView: View {
     }
 }
 
-struct ExpandedView: View {
+/// Two rows: 5-hour and weekly, each with a bar, the %, and when it resets.
+struct DetailView: View {
     @ObservedObject var store: UsageStore
-    var onOpenSettings: () -> Void
-    var onQuit: () -> Void
 
-    private let font = Font.system(size: 8.5, weight: .semibold).monospacedDigit()
-    private let small = Font.system(size: 8.5).monospacedDigit()
+    private let font = Font.system(size: 9.5, weight: .semibold).monospacedDigit()
+    private let small = Font.system(size: 9.5).monospacedDigit()
 
     var body: some View {
         let snap = store.current
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 4) {
-                ClaudeMark()
-                Text("Claude").font(font)
-                Spacer()
-                if let reset = snap?.session.resetsAt {
-                    Text("resets \(UsageFormat.countdown(to: reset, from: store.now))")
-                        .font(small).foregroundStyle(Palette.muted)
-                }
-            }
-            row("5h", snap?.session.percent)
-            row("W", snap?.weekly.percent)
-            HStack(spacing: 6) {
-                Group {
-                    if let snap {
-                        if let weeklyReset = snap.weekly.resetsAt {
-                            Text("Weekly resets \(UsageFormat.weekdayTime(weeklyReset))")
-                        } else {
-                            Text("Updated \(UsageFormat.age(of: snap.savedAt, from: store.now))")
-                        }
-                    } else {
-                        Text("No data yet. Run Claude Code once.")
-                    }
-                }
-                .font(.system(size: 7.5))
-                .foregroundStyle(Palette.muted)
-                Spacer()
-                Button(action: onOpenSettings) {
-                    Image(systemName: "gearshape.fill").font(.system(size: 8))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Palette.muted)
-                .help("Settings")
-            }
-            .padding(.top, 1)
+        VStack(spacing: 4) {
+            row("5h", snap?.session.percent,
+                reset: snap?.session.resetsAt.map { UsageFormat.countdown(to: $0, from: store.now) })
+            row("W", snap?.weekly.percent,
+                reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
         }
+        .padding(.horizontal, 10)
         .foregroundStyle(.white)
     }
 
-    private func row(_ label: String, _ percent: Int?) -> some View {
+    private func row(_ label: String, _ percent: Int?, reset: String?) -> some View {
         HStack(spacing: 5) {
-            Text(label).font(small).foregroundStyle(Palette.muted).frame(width: 12, alignment: .leading)
+            Text(label).font(small).foregroundStyle(Palette.muted).frame(width: 13, alignment: .leading)
             GeometryReader { geo in
                 HBar(percent: percent ?? 0, width: geo.size.width, height: 4)
                     .frame(maxHeight: .infinity)
             }
             .frame(height: 4)
-            Text(percent.map { "\($0)%" } ?? "--").font(font).frame(width: 26, alignment: .trailing)
+            Text(percent.map { "\($0)%" } ?? "--")
+                .font(font)
+                .foregroundStyle(Palette.number(percent ?? 0))
+                .frame(width: 30, alignment: .trailing)
+            Text(reset ?? "")
+                .font(small)
+                .foregroundStyle(Palette.muted)
+                .lineLimit(1)
+                .frame(width: 46, alignment: .leading)
         }
     }
 }

@@ -14,8 +14,12 @@ final class NotchController {
     private var originX: CGFloat = 0
     private var screenTop: CGFloat = 0
 
-    /// Room around the island so the expanded shadow is not clipped.
+    /// Room around the island so the detail box and its shadow are never clipped.
     static let margin: CGFloat = 24
+    /// Extra room on the left, for when the detail box is wider than the wing (screens without a notch).
+    static let leftRoom = NotchGeometry.detailSize.width + margin
+    /// Widest the collapsed wing gets, with room to spare.
+    static let maxWingWidth: CGFloat = 160
 
     init(store: UsageStore) {
         self.store = store
@@ -23,7 +27,9 @@ final class NotchController {
 
     func show() {
         let host = FirstMouseHostingView(rootView:
-            IslandView(model: model, store: store).padding(.leading, Self.margin))
+            IslandView(model: model, store: store).padding(.leading, Self.leftRoom))
+        // The panel's frame is set by layout(); don't let the SwiftUI content resize it.
+        host.sizingOptions = []
         let panel = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                             backing: .buffered, defer: false)
         panel.isOpaque = false
@@ -82,10 +88,9 @@ final class NotchController {
         model.geometry = geometry
         screenTop = frame.maxY
 
-        let size = geometry.expandedSize
-        let width = size.width + Self.margin * 2
-        let height = size.height + Self.margin
-        panel.setFrame(CGRect(x: originX - Self.margin, y: screenTop - height, width: width, height: height),
+        let width = Self.leftRoom + geometry.notchWidth + Self.maxWingWidth + Self.margin
+        let height = geometry.height + NotchGeometry.detailSize.height + Self.margin
+        panel.setFrame(CGRect(x: originX - Self.leftRoom, y: screenTop - height, width: width, height: height),
                        display: true)
     }
 
@@ -94,9 +99,12 @@ final class NotchController {
         return CGRect(x: originX, y: screenTop - model.geometry.height, width: size.width, height: model.geometry.height)
     }
 
+    /// The strip plus the detail box hanging under its right end.
     private var expandedRect: CGRect {
-        let size = model.geometry.expandedSize
-        return CGRect(x: originX, y: screenTop - size.height, width: size.width, height: size.height)
+        let detail = NotchGeometry.detailSize
+        let box = CGRect(x: originX + model.detailOffsetX, y: screenTop - model.geometry.height - detail.height,
+                         width: detail.width, height: detail.height)
+        return collapsedRect.union(box)
     }
 
     private func handleMouse(_ point: CGPoint) {

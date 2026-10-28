@@ -17,7 +17,6 @@
     --card: #1C1C1E;
   }
   * { box-sizing: border-box; }
-  [hidden] { display: none !important; }
   body {
     margin: 0; background: var(--page); color: var(--text);
     font: 14px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
@@ -32,8 +31,7 @@
   .controls input { flex: 1; }
   .controls .presets { display: flex; gap: 8px; align-items: center; }
   .controls .presets b { font-size: 12px; color: var(--muted); font-weight: 500; margin-right: 2px; }
-  button.on { background: #0A84FF; }
-  .check { min-width: 0 !important; flex: 0 !important; white-space: nowrap; }
+  .check { min-width: 0 !important; flex: none !important; white-space: nowrap; }
   button { font: inherit; font-size: 12px; color: var(--text); background: #2C2C2E; border: 0; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
 
   .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
@@ -42,8 +40,8 @@
     height: 120px; position: relative; overflow: hidden;
     background: linear-gradient(160deg, #1d2b64 0%, #6a3093 60%, #f8796b 140%);
   }
-  .scaler { position: absolute; top: 0; left: 50%; width: 0; transform: scale(2.2); transform-origin: top center; }
-  .menubar { position: absolute; top: 0; left: -200px; width: 400px; height: 32px; background: rgba(0,0,0,.18); }
+  .scaler { position: absolute; top: 0; width: 0; transform: scale(2.2); transform-origin: top left; }
+  .menubar { position: absolute; top: 0; left: -300px; width: 600px; height: 32px; background: rgba(0,0,0,.18); }
   .island {
     position: absolute; top: 0; left: -95px; height: 32px; background: #000;
     border-radius: 0 0 10px 10px; display: flex; align-items: center; justify-content: flex-end; padding-right: 9px;
@@ -67,17 +65,12 @@
 <body>
 <div class="wrap">
   <h1>Compact wing ideas</h1>
-  <p class="sub">Each one shows the Claude 5‑hour session and weekly usage on the right of the notch. Close‑ups are at 2.2× zoom; real width is shown on the right of each title.</p>
+  <p class="sub">Each one shows the Claude 5‑hour session and weekly usage on the right of the notch. Close‑ups are at 2.2× zoom and show the right half of the notch (the dark dot is the camera); the extra width each design adds is shown on the right of its title.</p>
 
   <div class="controls">
     <label>5‑hour <input type="range" id="sS" min="0" max="100" value="26"><span id="vS">26%</span></label>
     <label>Weekly <input type="range" id="sW" min="0" max="100" value="41"><span id="vW">41%</span></label>
-    <div class="presets" hidden>
-      <b>Showing</b>
-      <button data-ai="claude" class="on">Claude</button>
-      <button data-ai="codex">Codex</button>
-    </div>
-    <label class="check"><input type="checkbox" id="showIcon" checked> AI icon</label>
+    <label class="check"><input type="checkbox" id="showIcon" checked> Claude icon</label>
     <div class="presets">
       <button data-p="26,41">Now</button>
       <button data-p="74,52">Busy</button>
@@ -89,12 +82,7 @@
 </div>
 
 <script>
-  const ICONS = {
-    claude: `<svg width="10" height="10" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3.2" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>`,
-    codex: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10A37F" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7 5 5-5 5M12 18h7"/></svg>`,
-  };
-  const usage = { claude: [26, 41], codex: [58, 22] };
-  let ai = 'claude';
+  const CLAUDE = `<svg width="10" height="10" viewBox="0 0 24 24"><g stroke="var(--claude)" stroke-width="3.2" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>`;
   const col = p => p >= 90 ? 'var(--bad)' : p >= 70 ? 'var(--warn)' : 'var(--ok)';
   const numCol = p => p >= 70 ? col(p) : 'var(--text)';
 
@@ -182,29 +170,24 @@
         <div class="island"><div class="cam"></div><div class="row wingbox"></div></div></div></div>
       <div class="meta"><div class="t"><span class="n">${String.fromCharCode(65 + i)}</span>${v.name}<span class="w"></span></div><p>${v.note}</p></div>`;
     grid.appendChild(card);
-    return { box: card.querySelector('.wingbox'), island: card.querySelector('.island'), w: card.querySelector('.w') };
+    return { box: card.querySelector('.wingbox'), island: card.querySelector('.island'), w: card.querySelector('.w'), scaler: card.querySelector('.scaler') };
   });
 
   let phase = 0;
   function render() {
     const s = +sS.value, w = +sW.value;
     vS.textContent = s + '%'; vW.textContent = w + '%';
-    usage[ai] = [s, w];
     const icon = showIcon.checked;
     variants.forEach((v, i) => {
       const width = v.width + (icon ? 15 : 0);
-      cells[i].box.innerHTML = (icon ? `<span style="display:flex;margin-right:5px">${ICONS[ai]}</span>` : '') + v.html(s, w, phase);
+      cells[i].box.innerHTML = (icon ? `<span style="display:flex;margin-right:5px">${CLAUDE}</span>` : '') + v.html(s, w, phase);
       cells[i].island.style.width = 190 + width + 'px';
+      // keep the island's right end (where the wing is) inside the card
+      cells[i].scaler.style.left = `calc(100% - ${(95 + width) * 2.2 + 28}px)`;
       cells[i].w.textContent = '+' + width + 'px';
     });
   }
   sS.oninput = render; sW.oninput = render; showIcon.onchange = render;
-  document.querySelectorAll('[data-ai]').forEach(b => b.onclick = () => {
-    ai = b.dataset.ai;
-    document.querySelectorAll('[data-ai]').forEach(x => x.classList.toggle('on', x === b));
-    [sS.value, sW.value] = usage[ai];
-    render();
-  });
   document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
     const [s, w] = b.dataset.p.split(',');
     sS.value = s; sW.value = w; render();

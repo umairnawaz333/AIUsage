@@ -33,11 +33,19 @@ AI Usage puts your Claude **5-hour session** and **weekly** usage beside the not
 ### With Homebrew (recommended)
 
 ```sh
-brew tap umairnawaz333/tap
-brew install --cask ai-usage
+brew install --cask umairnawaz333/tap/ai-usage
 ```
 
 Then open **AI Usage** from Applications or Spotlight.
+
+Use the full name `umairnawaz333/tap/ai-usage` the first time. AI Usage isn't in Homebrew's official catalogue, and since Homebrew 6, apps from other taps must be trusted before Homebrew will load them. Installing with the full name adds the tap and trusts just this app in one step. After that, the short name `ai-usage` works for upgrades and uninstalling.
+
+If you've already run `brew tap umairnawaz333/tap` and `brew install --cask ai-usage` says "No Cask with this name exists", trust the app first:
+
+```sh
+brew trust --cask umairnawaz333/tap/ai-usage
+brew install --cask ai-usage
+```
 
 ### Manually
 

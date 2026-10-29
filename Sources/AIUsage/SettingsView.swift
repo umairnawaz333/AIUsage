@@ -135,40 +135,76 @@ private struct ClaudeConnectionSection: View {
     @ObservedObject var store: UsageStore
 
     var body: some View {
+        let status = store.status
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ClaudeMark(size: 14)
                 Text("Claude").font(.headline)
                 Spacer()
-                if store.isConnected {
-                    Label("Connected", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .font(.callout)
-                    Button("Disconnect") { store.disconnect() }
-                } else {
-                    Button("Connect") { store.connect() }
-                        .buttonStyle(.borderedProminent)
-                }
+                badge(status)
+                buttons(status)
             }
 
-            Group {
-                if store.isConnected {
-                    if let snap = store.snapshot {
-                        Text("Last update \(UsageFormat.age(of: snap.savedAt, from: store.now)). Numbers refresh while Claude Code is running.")
-                    } else {
-                        Text("Waiting for numbers. Send a message in Claude Code and they'll appear.")
-                    }
-                } else {
-                    Text("AI Usage reads your limits from Claude Code on this Mac. No password, and nothing leaves your computer. Connecting adds a small bridge in front of your Claude Code status line; if you already have one, it keeps working exactly as before.")
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(explanation(status))
+                .font(.caption)
+                .foregroundStyle(status == .noPlanLimits ? Color.orange : .secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let error = store.connectionError {
                 Text(error).font(.caption).foregroundStyle(.red)
             }
+        }
+    }
+
+    @ViewBuilder private func badge(_ status: ConnectionStatus) -> some View {
+        switch status {
+        case .claudeCodeMissing:
+            Label("Claude Code not found", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange).font(.callout)
+        case .notConnected:
+            Label("Claude Code found", systemImage: "checkmark.circle")
+                .foregroundStyle(.secondary).font(.callout)
+        case .noPlanLimits:
+            Label("No plan limits", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange).font(.callout)
+        case .waiting, .ok:
+            Label("Connected", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green).font(.callout)
+        }
+    }
+
+    @ViewBuilder private func buttons(_ status: ConnectionStatus) -> some View {
+        if status == .claudeCodeMissing {
+            Button("Install Claude Code") { NSWorkspace.shared.open(ClaudeCodeInstall.setupURL) }
+        }
+        if store.isConnected {
+            Button("Disconnect") { store.disconnect() }
+        } else {
+            // Nothing is changed on the Mac until Claude Code is there to use the connection.
+            Button("Connect") { store.connect() }
+                .buttonStyle(.borderedProminent)
+                .disabled(status == .claudeCodeMissing)
+        }
+    }
+
+    private func explanation(_ status: ConnectionStatus) -> String {
+        let openOnce = "Open Claude Code once and sign in with your Claude account."
+        switch status {
+        case .claudeCodeMissing where store.snapshot != nil:
+            return "Claude Code isn't on this Mac any more, so these are the last numbers it reported. Reinstall it to keep them up to date."
+        case .claudeCodeMissing:
+            return "AI Usage reads your plan limits from Claude Code, Anthropic's coding tool. Install it and sign in with a Claude Pro or Max plan, then come back here to connect. This page updates by itself."
+        case .notConnected(let neverOpened):
+            return "AI Usage reads your limits from Claude Code on this Mac. No password, and nothing leaves your computer. Connecting adds a small bridge in front of your Claude Code status line; if you already have one, it keeps working exactly as before."
+                + (neverOpened ? " " + openOnce : "")
+        case .waiting(let neverOpened):
+            return neverOpened ? openOnce + " Then send a message and your numbers will appear."
+                : "Waiting for numbers. Open Claude Code and send a message, and they'll appear."
+        case .noPlanLimits:
+            return "Claude Code is running, but it isn't reporting plan limits. Only Claude Pro and Max plans have 5-hour and weekly limits. If you're signed in with an API key, run /login in Claude Code and choose your Claude account."
+        case .ok:
+            let age = store.snapshot.map { UsageFormat.age(of: $0.savedAt, from: store.now) } ?? ""
+            return "Last update \(age). Numbers refresh while Claude Code is running."
         }
     }
 }

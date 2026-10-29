@@ -38,13 +38,13 @@ brew install --cask umairnawaz333/tap/ai-usage
 
 Then open **AI Usage** from Applications or Spotlight.
 
-Use the full name `umairnawaz333/tap/ai-usage` the first time. AI Usage isn't in Homebrew's official catalogue, and since Homebrew 6, apps from other taps must be trusted before Homebrew will load them. Installing with the full name adds the tap and trusts just this app in one step. After that, the short name `ai-usage` works for upgrades and uninstalling.
+Always use the full name `umairnawaz333/tap/ai-usage`. AI Usage isn't in Homebrew's official catalogue, so `brew install --cask ai-usage` on its own says "No Cask with this name exists". Since Homebrew 6, apps from other taps must also be trusted before Homebrew will load them, and installing with the full name adds the tap and trusts just this app in one step.
 
 If you've already run `brew tap umairnawaz333/tap` and `brew install --cask ai-usage` says "No Cask with this name exists", trust the app first:
 
 ```sh
 brew trust --cask umairnawaz333/tap/ai-usage
-brew install --cask ai-usage
+brew install --cask umairnawaz333/tap/ai-usage
 ```
 
 ### Manually
@@ -72,7 +72,7 @@ Choose one in **Settings → Notch style**. You can also hide the Claude icon to
 ## Update
 
 ```sh
-brew upgrade --cask ai-usage
+brew upgrade --cask umairnawaz333/tap/ai-usage
 ```
 
 If you installed manually, download the latest release and replace the app in Applications. Your settings and connection are kept.
@@ -82,13 +82,13 @@ If you installed manually, download the latest release and replace the app in Ap
 **Remove everything (recommended).** This also restores your original Claude Code status line:
 
 ```sh
-brew uninstall --zap --cask ai-usage
+brew uninstall --zap --cask umairnawaz333/tap/ai-usage
 ```
 
 **Remove only the app:**
 
 ```sh
-brew uninstall --cask ai-usage
+brew uninstall --cask umairnawaz333/tap/ai-usage
 ```
 
 This leaves the connection in place, so your Claude Code status line keeps working. To remove the connection too, click **Disconnect** in Settings before uninstalling, or run the `--zap` command above.
@@ -114,6 +114,12 @@ Only the `statusLine` setting in `~/.claude/settings.json` changes, and **Discon
 The app checks for new numbers every 5 seconds. If several Claude Code sessions are open, it shows the highest value for the current window, because idle sessions report older numbers. When a limit resets, it shows 0% straight away.
 
 ## FAQ
+
+**I don't have Claude Code.**
+AI Usage needs it: Claude Code is where your plan limits come from. Settings shows **Claude Code not found** with an **Install Claude Code** button, and Connect stays off until it's installed, so nothing changes on your Mac before then. Install [Claude Code](https://code.claude.com/docs/en/setup), sign in with your Claude Pro or Max plan, and Settings switches to **Connect** by itself within a few seconds.
+
+**It says "No plan limits".**
+Claude Code is running but isn't reporting 5-hour or weekly limits. Only Claude Pro and Max plans have them. If Claude Code is signed in with an API key, run `/login` in Claude Code and choose your Claude account.
 
 **The numbers aren't updating.**
 They update while Claude Code is running. Send a message in Claude Code, and check that Settings shows **Connected**.

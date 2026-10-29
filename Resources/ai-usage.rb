@@ -34,6 +34,6 @@ cask "ai-usage" do
   caveats <<~EOS
     Open AI Usage and click Connect in Settings to link it to Claude Code.
     To remove it completely (and restore your original status line), use:
-      brew uninstall --zap --cask ai-usage
+      brew uninstall --zap --cask umairnawaz333/tap/ai-usage
   EOS
 end

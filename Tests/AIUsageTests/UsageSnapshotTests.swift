@@ -116,3 +116,42 @@ struct JSONEditTests {
         }
     }
 }
+
+struct ConnectionStatusTests {
+    @Test func missingClaudeCodeComesFirst() {
+        #expect(ConnectionStatus.resolve(install: .notFound, connected: true, hasUsage: true,
+                                         sawRequestsWithoutLimits: false) == .claudeCodeMissing)
+    }
+
+    @Test func eachStepInOrder() {
+        #expect(ConnectionStatus.resolve(install: .neverOpened, connected: false, hasUsage: false,
+                                         sawRequestsWithoutLimits: false) == .notConnected(neverOpened: true))
+        #expect(ConnectionStatus.resolve(install: .ready, connected: true, hasUsage: false,
+                                         sawRequestsWithoutLimits: false) == .waiting(neverOpened: false))
+        #expect(ConnectionStatus.resolve(install: .ready, connected: true, hasUsage: false,
+                                         sawRequestsWithoutLimits: true) == .noPlanLimits)
+        #expect(ConnectionStatus.resolve(install: .ready, connected: true, hasUsage: true,
+                                         sawRequestsWithoutLimits: true) == .ok)
+    }
+
+    @Test func detectsApiKeySessions() {
+        let apiKey = #"{"cost":{"total_api_duration_ms":1200},"context_window":{"total_input_tokens":900}}"#
+        let fresh = #"{"cost":{"total_api_duration_ms":0},"context_window":{"total_input_tokens":0}}"#
+        let plan = #"{"cost":{"total_api_duration_ms":1200},"rate_limits":{"five_hour":{"used_percentage":5}}}"#
+        #expect(Reading.madeRequestsWithoutLimits(Data(apiKey.utf8)))
+        #expect(!Reading.madeRequestsWithoutLimits(Data(fresh.utf8)))
+        #expect(!Reading.madeRequestsWithoutLimits(Data(plan.utf8)))
+        #expect(!Reading.madeRequestsWithoutLimits(Data("nope".utf8)))
+    }
+
+    @Test func looksInTheUsualInstallPlaces() throws {
+        let home = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: home.appendingPathComponent(".nvm/versions/node/v22.1.0/bin"),
+                                                withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let paths = ClaudeCodeInstall.programPaths(home: home, fileManager: .default)
+        #expect(paths.contains(home.appendingPathComponent(".local/bin/claude").path))
+        #expect(paths.contains("/opt/homebrew/bin/claude"))
+        #expect(paths.contains(home.appendingPathComponent(".nvm/versions/node/v22.1.0/bin/claude").path))
+    }
+}

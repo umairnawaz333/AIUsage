@@ -75,6 +75,8 @@ struct IslandView: View {
         HStack(spacing: 0) {
             Spacer().frame(width: geo.notchWidth + (geo.notchWidth > 0 ? 4 : 8))
             WingView(style: style, snapshot: store.current, showIcon: showIcon)
+                // Last-known numbers stay visible but dimmed once Claude Code is gone.
+                .opacity(store.status == .claudeCodeMissing ? 0.45 : 1)
             Spacer().frame(width: geo.notchWidth > 0 ? 6 : 8)
         }
         .frame(height: geo.height)
@@ -96,35 +98,53 @@ struct DetailView: View {
     var body: some View {
         let snap = store.current
         HStack(spacing: 6) {
-            if !store.isConnected {
-                Button(action: onOpenSettings) {
-                    HStack(spacing: 5) {
-                        ClaudeMark(size: 9)
-                        Text("Connect Claude").font(font)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(.white.opacity(0.14)))
-                    .contentShape(Capsule())
+            switch store.status {
+            case .ok:
+                VStack(spacing: 4) {
+                    row("5h", snap?.session.percent,
+                        reset: snap?.session.resetsAt.map { UsageFormat.countdown(to: $0, from: store.now) })
+                    row("W", snap?.weekly.percent,
+                        reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
                 }
-                .buttonStyle(.plain)
-                Spacer()
-            } else if snap == nil {
-                Text("Waiting for Claude Code…").font(small).foregroundStyle(Palette.muted)
-                Spacer()
-            } else {
-            VStack(spacing: 4) {
-                row("5h", snap?.session.percent,
-                    reset: snap?.session.resetsAt.map { UsageFormat.countdown(to: $0, from: store.now) })
-                row("W", snap?.weekly.percent,
-                    reset: snap?.weekly.resetsAt.map(UsageFormat.weekdayHour))
-            }
+            case .claudeCodeMissing:
+                action("Install Claude Code")
+            case .notConnected:
+                action("Connect Claude")
+            case .waiting(let neverOpened):
+                message(neverOpened ? "Sign in to Claude Code" : "Waiting for Claude Code…")
+            case .noPlanLimits:
+                action("No plan limits")
             }
             SettingsButton(action: onOpenSettings)
         }
         .padding(.leading, 14)
         .padding(.trailing, 6)
         .foregroundStyle(.white)
+    }
+
+    /// A pill that opens Settings, where the next step is.
+    private func action(_ title: String) -> some View {
+        HStack {
+            Button(action: onOpenSettings) {
+                HStack(spacing: 5) {
+                    ClaudeMark(size: 9)
+                    Text(title).font(font).lineLimit(1)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(.white.opacity(0.14)))
+                .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func message(_ text: String) -> some View {
+        HStack {
+            Text(text).font(small).foregroundStyle(Palette.muted).lineLimit(1)
+            Spacer(minLength: 0)
+        }
     }
 
     private func row(_ label: String, _ percent: Int?, reset: String?) -> some View {
